@@ -478,6 +478,7 @@ ZephysTab *zephys_tab_new(GtkNotebook *notebook, GtkWindow *window, ZephysConfig
         index = gtk_notebook_append_page(notebook, tab->box, tab->tab_label_event_box);
     }
     gtk_notebook_set_tab_reorderable(notebook, tab->box, TRUE);
+    gtk_notebook_set_tab_detachable(notebook, tab->box, TRUE);
     gtk_widget_show_all(tab->box);
     gtk_notebook_set_current_page(notebook, index);
     gtk_widget_grab_focus(tab->terminal);

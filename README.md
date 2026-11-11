@@ -9,6 +9,7 @@ Clean terminal emulator written in C99, GTK3, and VTE. Designed to be lightweigh
 - Built-in Monokai theme (dark and light variants)
 - Preferences dialog to adjust font, theme, opacity, and cursor shape
 - Tab bar with an inline new-tab button, per-tab close buttons, and middle-click tab closing
+- Detachable tabs: drag-and-drop tabs between windows or drag to desktop to spawn a new window
 - Tabs open in the current tab working directory
 - Shortcuts to switch tabs directly (`Alt+1` to `Alt+9`) or cycle through tabs (`Ctrl+PageUp` / `PageDown`)
 - Word deletion shortcuts (`Shift+Backspace` deletes backward, `Shift+Delete` deletes forward)
@@ -30,6 +31,7 @@ Clean terminal emulator written in C99, GTK3, and VTE. Designed to be lightweigh
 | `Ctrl + Left` / `Ctrl + Right` | Move cursor by word |
 | `Ctrl + Shift + O` | Open working directory in file manager |
 | `Ctrl + Shift + T` | Open new tab |
+| `Ctrl + Shift + N` | Open new window |
 | `Ctrl + Shift + W` | Close active tab |
 | `Ctrl + PageUp` / `PageDown` | Switch to previous / next tab |
 | `Alt + 1` .. `Alt + 9` | Switch directly to tabs 1 through 9 |

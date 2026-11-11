@@ -19,7 +19,7 @@ Always run `make` after editing C files to ensure the build passes without warni
 
 ## Code structure
 
-- `src/main.c`: program entry, command line argument parsing, and top-level GTK window setup.
+- `src/main.c`, `src/main.h`: program entry, command line argument parsing, and top-level GTK window setup.
 - `src/terminal.c`, `src/terminal.h`: tab creation, VTE terminal spawning, working directory tracking, and tab title updates.
 - `src/shortcuts.c`, `src/shortcuts.h`: keyboard bindings and right-click context menu actions.
 - `src/config.c`, `src/config.h`: configuration file reader and writer (`~/.config/zephys/config.ini`).

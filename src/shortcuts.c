@@ -1,5 +1,6 @@
 #include "shortcuts.h"
 #include "preferences.h"
+#include "main.h"
 #include <gdk/gdkkeysyms.h>
 
 static void on_menu_copy(GtkMenuItem *item, gpointer user_data) {
@@ -185,6 +186,14 @@ gboolean zephys_on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
             case GDK_KEY_t: {
                 char *cwd = zephys_tab_get_cwd(tab);
                 zephys_tab_new(tab->notebook, tab->window, tab->config, cwd);
+                g_free(cwd);
+                return TRUE;
+            }
+
+            case GDK_KEY_N:
+            case GDK_KEY_n: {
+                char *cwd = zephys_tab_get_cwd(tab);
+                zephys_window_new(tab->config, cwd);
                 g_free(cwd);
                 return TRUE;
             }

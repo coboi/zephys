@@ -1,6 +1,7 @@
 #include "preferences.h"
 #include "terminal.h"
 #include "themes.h"
+#include "main.h"
 
 typedef struct {
     GtkWindow *parent;
@@ -44,24 +45,29 @@ static void apply_preferences(PrefsContext *ctx) {
     /* Update tab style */
     zephys_apply_tab_css(ctx->config->theme_name, ctx->config->opacity);
 
-    /* Update open tabs */
-    int n_pages = gtk_notebook_get_n_pages(ctx->notebook);
-    for (int i = 0; i < n_pages; i++) {
-        GtkWidget *page = gtk_notebook_get_nth_page(ctx->notebook, i);
-        if (page) {
-            ZephysTab *tab = (ZephysTab *)g_object_get_data(G_OBJECT(page), "zephys-tab");
-            if (tab) {
-                zephys_tab_apply_config(tab, ctx->config);
+    /* Update open tabs across all open windows */
+    GList *toplevels = gtk_window_list_toplevels();
+    for (GList *iter = toplevels; iter != NULL; iter = iter->next) {
+        if (!GTK_IS_WINDOW(iter->data) || gtk_widget_in_destruction(GTK_WIDGET(iter->data))) continue;
+        AppState *app = (AppState *)g_object_get_data(G_OBJECT(iter->data), "zephys-app");
+        if (app && app->notebook) {
+            int n_pages = gtk_notebook_get_n_pages(app->notebook);
+            for (int i = 0; i < n_pages; i++) {
+                GtkWidget *page = gtk_notebook_get_nth_page(app->notebook, i);
+                if (page) {
+                    ZephysTab *tab = (ZephysTab *)g_object_get_data(G_OBJECT(page), "zephys-tab");
+                    if (tab) {
+                        zephys_tab_apply_config(tab, ctx->config);
+                    }
+                }
             }
+            gtk_widget_queue_draw(GTK_WIDGET(iter->data));
         }
     }
+    g_list_free(toplevels);
 
     /* Save configuration */
     zephys_config_save(ctx->config);
-
-    if (ctx->parent) {
-        gtk_widget_queue_draw(GTK_WIDGET(ctx->parent));
-    }
 }
 
 static gchar *format_opacity_value(GtkScale *scale, gdouble value, gpointer user_data) {
