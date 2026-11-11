@@ -1,0 +1,8 @@
+[Nemo Action]
+Name=Open in Zephys
+Comment=Open Zephys terminal emulator in this directory
+Exec=zephys %F
+Icon-Name=utilities-terminal
+Selection=any
+Extensions=dir;
+Quote=double

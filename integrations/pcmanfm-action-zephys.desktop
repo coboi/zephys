@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Action
+Name=Open in Zephys
+Icon=utilities-terminal
+Profiles=on_folder;
+
+[X-Action-Profile on_folder]
+MimeTypes=inode/directory;
+Exec=zephys %f

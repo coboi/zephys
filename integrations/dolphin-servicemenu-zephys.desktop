@@ -1,0 +1,10 @@
+[Desktop Entry]
+Type=Service
+X-KDE-ServiceTypes=KonqPopupMenu/Plugin
+MimeType=inode/directory;
+Actions=openInZephys;
+
+[Desktop Action openInZephys]
+Name=Open in Zephys
+Icon=utilities-terminal
+Exec=zephys %f

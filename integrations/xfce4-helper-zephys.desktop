@@ -1,0 +1,10 @@
+[Desktop Entry]
+Version=1.0
+Icon=org.xfce.terminal
+Type=X-XFCE-Helper
+Name=Zephys Terminal
+StartupNotify=true
+X-XFCE-Binaries=zephys;
+X-XFCE-Category=TerminalEmulator
+X-XFCE-Commands=%B;
+X-XFCE-CommandsWithParameter=%B --working-directory=%s;

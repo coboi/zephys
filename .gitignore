@@ -1,0 +1,10 @@
+# Build artifacts
+zephys
+*.o
+src/*.o
+
+# Editor & OS files
+*~
+*.swp
+*.swo
+.DS_Store

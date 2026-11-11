@@ -1,0 +1,3 @@
+#!/bin/sh
+target="${NAUTILUS_SCRIPT_CURRENT_URI:-$PWD}"
+exec zephys "$target"

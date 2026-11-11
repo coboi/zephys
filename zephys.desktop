@@ -1,0 +1,16 @@
+[Desktop Entry]
+Name=Zephys Terminal
+Comment=Clean terminal emulator
+Exec=zephys %f
+Icon=org.xfce.terminal
+Terminal=false
+Type=Application
+Categories=System;TerminalEmulator;
+Keywords=shell;prompt;command;commandline;cmd;
+StartupNotify=true
+Actions=open-here;
+
+[Desktop Action open-here]
+Name=Open in Zephys
+Exec=zephys %f
+
