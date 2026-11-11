@@ -12,7 +12,7 @@ Clean terminal emulator written in C99, GTK3, and VTE. Designed to be lightweigh
 - Detachable tabs: drag-and-drop tabs between windows or drag to desktop to spawn a new window
 - Tabs open in the current tab working directory
 - Shortcuts to switch tabs directly (`Alt+1` to `Alt+9`) or cycle through tabs (`Ctrl+PageUp` / `PageDown`)
-- Word deletion shortcuts (`Shift+Backspace` deletes backward, `Shift+Delete` deletes forward)
+- Word and line deletion shortcuts (`Ctrl+Backspace` / `Ctrl+Delete` for words, `Ctrl+Shift+Backspace` / `Ctrl+Shift+Delete` for lines)
 - Word navigation with `Ctrl+Left` and `Ctrl+Right`
 - Multiline input shortcut (`Shift+Enter` sends `\n` without submitting)
 - Fullscreen mode toggle with `F11`
@@ -25,8 +25,11 @@ Clean terminal emulator written in C99, GTK3, and VTE. Designed to be lightweigh
 | Shortcut | Action |
 | :--- | :--- |
 | `Ctrl + ,` / `Ctrl + Shift + P` | Preferences dialog |
-| `Shift + Backspace` / `Ctrl + Backspace` | Delete word backward (`^W`) |
-| `Shift + Delete` / `Ctrl + Delete` | Delete word forward (`Alt+D`) |
+| `Ctrl + Backspace` | Delete word backward (`^W`) |
+| `Ctrl + Delete` | Delete word forward (`Alt+D`) |
+| `Ctrl + Shift + Backspace` | Delete line backward to start (`^U`) |
+| `Ctrl + Shift + Delete` | Delete line forward to end (`^K`) |
+| `Home` / `End` | Move cursor to start / end of line |
 | `Shift + Enter` | Insert newline without submitting (`\n`) |
 | `Ctrl + Left` / `Ctrl + Right` | Move cursor by word |
 | `Ctrl + Shift + O` | Open working directory in file manager |

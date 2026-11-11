@@ -153,17 +153,27 @@ gboolean zephys_on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
         tab->title_timer_id = g_timeout_add(100, on_title_update_idle, tab);
     }
 
-    /* Erase word backward (Shift/Ctrl + Backspace sends ^W) */
+    /* Erase line backward (Ctrl + Shift + Backspace sends ^U) */
+    /* Erase word backward (Ctrl + Backspace sends ^W) */
     if (keyval == GDK_KEY_BackSpace) {
-        if ((state & GDK_SHIFT_MASK) || (state & GDK_CONTROL_MASK)) {
+        if ((state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK)) == (GDK_CONTROL_MASK | GDK_SHIFT_MASK)) {
+            vte_terminal_feed_child(VTE_TERMINAL(tab->terminal), "\x15", 1);
+            return TRUE;
+        }
+        if ((state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK)) == GDK_CONTROL_MASK) {
             vte_terminal_feed_child(VTE_TERMINAL(tab->terminal), "\x17", 1);
             return TRUE;
         }
     }
 
-    /* Erase word forward (Shift/Ctrl + Delete sends Alt+D) */
+    /* Erase line forward (Ctrl + Shift + Delete sends ^K) */
+    /* Erase word forward (Ctrl + Delete sends Alt+D) */
     if (keyval == GDK_KEY_Delete || keyval == GDK_KEY_KP_Delete) {
-        if ((state & GDK_SHIFT_MASK) || (state & GDK_CONTROL_MASK)) {
+        if ((state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK)) == (GDK_CONTROL_MASK | GDK_SHIFT_MASK)) {
+            vte_terminal_feed_child(VTE_TERMINAL(tab->terminal), "\x0b", 1);
+            return TRUE;
+        }
+        if ((state & (GDK_CONTROL_MASK | GDK_SHIFT_MASK | GDK_MOD1_MASK)) == GDK_CONTROL_MASK) {
             vte_terminal_feed_child(VTE_TERMINAL(tab->terminal), "\033d", 2);
             return TRUE;
         }
