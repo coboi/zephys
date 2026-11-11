@@ -13,6 +13,8 @@ Clean terminal emulator written in C99, GTK3, and VTE. Designed to be lightweigh
 - Shortcuts to switch tabs directly (`Alt+1` to `Alt+9`) or cycle through tabs (`Ctrl+PageUp` / `PageDown`)
 - Word deletion shortcuts (`Shift+Backspace` deletes backward, `Shift+Delete` deletes forward)
 - Word navigation with `Ctrl+Left` and `Ctrl+Right`
+- Multiline input shortcut (`Shift+Enter` sends `\n` without submitting)
+- Fullscreen mode toggle with `F11`
 - File manager integration: open the active working directory via `Ctrl+Shift+O` or context menu
 - Automatic URL detection (`Ctrl+click` to open links in a browser)
 - Plain text configuration in `~/.config/zephys/config.ini`
@@ -24,12 +26,14 @@ Clean terminal emulator written in C99, GTK3, and VTE. Designed to be lightweigh
 | `Ctrl + ,` / `Ctrl + Shift + P` | Preferences dialog |
 | `Shift + Backspace` / `Ctrl + Backspace` | Delete word backward (`^W`) |
 | `Shift + Delete` / `Ctrl + Delete` | Delete word forward (`Alt+D`) |
+| `Shift + Enter` | Insert newline without submitting (`\n`) |
 | `Ctrl + Left` / `Ctrl + Right` | Move cursor by word |
 | `Ctrl + Shift + O` | Open working directory in file manager |
 | `Ctrl + Shift + T` | Open new tab |
 | `Ctrl + Shift + W` | Close active tab |
 | `Ctrl + PageUp` / `PageDown` | Switch to previous / next tab |
 | `Alt + 1` .. `Alt + 9` | Switch directly to tabs 1 through 9 |
+| `F11` | Toggle fullscreen |
 | `Ctrl + Shift + C` | Copy text |
 | `Ctrl + Shift + V` | Paste text |
 | `Ctrl + +` / `Ctrl + -` | Increase / decrease font size |

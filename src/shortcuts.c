@@ -117,6 +117,31 @@ gboolean zephys_on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
     guint state = event->state & gtk_accelerator_get_default_mod_mask();
     guint keyval = event->keyval;
 
+    /* Fullscreen toggle (F11) */
+    if (keyval == GDK_KEY_F11 && !(state & (GDK_CONTROL_MASK | GDK_MOD1_MASK))) {
+        if (tab->window) {
+            GdkWindow *gdk_win = gtk_widget_get_window(GTK_WIDGET(tab->window));
+            if (gdk_win) {
+                GdkWindowState win_state = gdk_window_get_state(gdk_win);
+                if (win_state & GDK_WINDOW_STATE_FULLSCREEN) {
+                    gtk_window_unfullscreen(tab->window);
+                } else {
+                    gtk_window_fullscreen(tab->window);
+                }
+            } else {
+                gtk_window_fullscreen(tab->window);
+            }
+            return TRUE;
+        }
+    }
+
+    /* Multiline newline (Shift + Enter) */
+    if ((keyval == GDK_KEY_Return || keyval == GDK_KEY_KP_Enter || keyval == GDK_KEY_ISO_Enter) &&
+        (state & GDK_SHIFT_MASK) && !(state & GDK_CONTROL_MASK)) {
+        vte_terminal_feed_child(VTE_TERMINAL(tab->terminal), "\n", 1);
+        return TRUE;
+    }
+
     /* Schedule title update on command submit or interrupt */
     if (keyval == GDK_KEY_Return || keyval == GDK_KEY_KP_Enter ||
         ((state & GDK_CONTROL_MASK) && (keyval == GDK_KEY_c || keyval == GDK_KEY_C ||
