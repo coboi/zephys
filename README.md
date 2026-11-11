@@ -4,6 +4,8 @@ Clean terminal emulator written in C99, GTK3, and VTE. Designed to be lightweigh
 
 ![Zephys Terminal Preview](assets/preview.png)
 
+> **Note:** Zephys is in early development (v0.1.0) and built primarily for personal use. It has only been tested on Linux Mint (XFCE) so far, so behavior on other distributions or desktop environments is unverified.
+
 ## Features
 
 - Built-in Monokai theme (dark and light variants)

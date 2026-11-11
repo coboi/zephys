@@ -402,7 +402,7 @@ static int on_command_line(GApplication *gapp, GApplicationCommandLine *cmdline,
             return 0;
         }
         if (g_strcmp0(argv[i], "-v") == 0 || g_strcmp0(argv[i], "--version") == 0) {
-            g_application_command_line_print(cmdline, "Zephys Terminal 1.0\n");
+            g_application_command_line_print(cmdline, "Zephys Terminal %s\n", ZEPHYS_VERSION);
             g_strfreev(argv);
             return 0;
         }

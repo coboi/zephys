@@ -1,6 +1,8 @@
 #ifndef ZEPHYS_MAIN_H
 #define ZEPHYS_MAIN_H
 
+#define ZEPHYS_VERSION "0.1.0"
+
 #include <gtk/gtk.h>
 #include "config.h"
 
