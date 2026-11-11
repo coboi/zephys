@@ -25,6 +25,7 @@ Always run `make` after editing C files to ensure the build passes without warni
 - `src/config.c`, `src/config.h`: configuration file reader and writer (`~/.config/zephys/config.ini`).
 - `src/preferences.c`, `src/preferences.h`: GTK preferences dialog for font, opacity, and themes.
 - `src/themes.c`, `src/themes.h`, `src/monokai.h`: terminal color palettes and tab CSS styling.
+- `assets/`: screenshots and media assets used in documentation.
 - `integrations/`: helper and action files for file managers (Thunar, Nemo, Dolphin, Nautilus, PCManFM).
 
 ## Guidelines

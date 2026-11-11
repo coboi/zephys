@@ -2,19 +2,22 @@
 
 Clean terminal emulator written in C99, GTK3, and VTE. Designed to be lightweight (around 15-20 MB RAM) with a workflow similar to XFCE Terminal.
 
+![Zephys Terminal Preview](assets/preview.png)
+
 ## Features
 
 - Built-in Monokai theme (dark and light variants)
 - Preferences dialog to adjust font, theme, opacity, and cursor shape
+- Tab bar with an inline new-tab button, per-tab close buttons, and middle-click tab closing
+- Tabs open in the current tab working directory
+- Shortcuts to switch tabs directly (`Alt+1` to `Alt+9`) or cycle through tabs (`Ctrl+PageUp` / `PageDown`)
 - Word deletion shortcuts (`Shift+Backspace` deletes backward, `Shift+Delete` deletes forward)
 - Word navigation with `Ctrl+Left` and `Ctrl+Right`
 - File manager integration: open the active working directory via `Ctrl+Shift+O` or context menu
-- New tabs open in the current tab working directory
-- Tab bar with close buttons and switching shortcuts (`Alt+1` through `Alt+9`)
 - Automatic URL detection (`Ctrl+click` to open links in a browser)
 - Plain text configuration in `~/.config/zephys/config.ini`
 
-## Keyboard shortcuts
+## Shortcuts and controls
 
 | Shortcut | Action |
 | :--- | :--- |
@@ -32,6 +35,7 @@ Clean terminal emulator written in C99, GTK3, and VTE. Designed to be lightweigh
 | `Ctrl + +` / `Ctrl + -` | Increase / decrease font size |
 | `Ctrl + 0` | Reset font size |
 | `Ctrl + Left Click` | Open URL in browser |
+| `Middle Click` on tab | Close tab |
 | `Right Click` | Context menu |
 
 ## Build and installation
