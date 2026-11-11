@@ -19,6 +19,7 @@ typedef struct {
     ZephysConfig *config;
     double font_scale;
     guint title_timer_id;
+    gboolean is_closing;
 } ZephysTab;
 
 int zephys_notebook_get_tab_count(GtkNotebook *notebook);

@@ -87,7 +87,9 @@ static void on_child_exited(VteTerminal *terminal, int status, gpointer user_dat
     (void)terminal;
     (void)status;
     ZephysTab *tab = (ZephysTab *)user_data;
-    zephys_tab_close(tab);
+    if (tab && !tab->is_closing) {
+        zephys_tab_close(tab);
+    }
 }
 
 static void on_window_title_changed(VteTerminal *terminal, gpointer user_data) {
@@ -244,21 +246,26 @@ static gboolean on_tab_label_button_press(GtkWidget *widget, GdkEventButton *eve
 }
 
 void zephys_tab_close(ZephysTab *tab) {
-    if (!tab) return;
+    if (!tab || tab->is_closing) return;
+    tab->is_closing = TRUE;
 
     if (tab->title_timer_id > 0) {
         g_source_remove(tab->title_timer_id);
         tab->title_timer_id = 0;
     }
 
+    if (tab->terminal) {
+        g_signal_handlers_disconnect_by_data(tab->terminal, tab);
+    }
+
     GtkNotebook *notebook = tab->notebook;
     GtkWindow *window = tab->window;
 
-    int page_num = gtk_notebook_page_num(notebook, tab->box);
-    int real_count = zephys_notebook_get_tab_count(notebook);
-    int cur = gtk_notebook_get_current_page(notebook);
+    int page_num = notebook ? gtk_notebook_page_num(notebook, tab->box) : -1;
+    int real_count = notebook ? zephys_notebook_get_tab_count(notebook) : 0;
+    int cur = notebook ? gtk_notebook_get_current_page(notebook) : -1;
 
-    if (page_num >= 0) {
+    if (page_num >= 0 && notebook) {
         /* If closing the currently active tab, switch to adjacent real tab first */
         if (real_count > 1 && cur == page_num) {
             if (page_num == real_count - 1) {
@@ -271,8 +278,8 @@ void zephys_tab_close(ZephysTab *tab) {
     }
 
     /* If no more tabs, close the window */
-    if (zephys_notebook_get_tab_count(notebook) == 0) {
-        if (window) {
+    if (notebook && zephys_notebook_get_tab_count(notebook) == 0) {
+        if (window && GTK_IS_WINDOW(window) && !gtk_widget_in_destruction(GTK_WIDGET(window))) {
             gtk_window_close(window);
         }
     }
@@ -281,11 +288,17 @@ void zephys_tab_close(ZephysTab *tab) {
 static void on_tab_destroy(GtkWidget *widget, gpointer user_data) {
     (void)widget;
     ZephysTab *tab = (ZephysTab *)user_data;
+    if (!tab) return;
+    tab->is_closing = TRUE;
     if (tab->title_timer_id > 0) {
         g_source_remove(tab->title_timer_id);
         tab->title_timer_id = 0;
     }
+    if (tab->terminal) {
+        g_signal_handlers_disconnect_by_data(tab->terminal, tab);
+    }
     g_free(tab->cwd);
+    tab->cwd = NULL;
     g_free(tab);
 }
 

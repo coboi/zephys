@@ -11,6 +11,7 @@ typedef struct {
     GtkWindow *window;
     ZephysConfig *config;
     GtkWidget *dummy_page;
+    gboolean is_closing;
 } AppState;
 
 GtkWidget *zephys_window_create(GtkApplication *app, ZephysConfig *config, const char *initial_cwd, gboolean add_initial_tab);

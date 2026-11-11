@@ -13,6 +13,7 @@ static void on_page_reordered(GtkNotebook *notebook, GtkWidget *child, guint pag
 
 static void update_window_title_for_page(AppState *app, GtkWidget *page) {
     if (!app || !app->window || !page) return;
+    if (app->is_closing || gtk_widget_in_destruction(GTK_WIDGET(app->window))) return;
 
     if (g_object_get_data(G_OBJECT(page), "zephys-dummy-page")) {
         return;
@@ -48,7 +49,8 @@ static void update_window_title_for_page(AppState *app, GtkWidget *page) {
 static void on_page_switched(GtkNotebook *notebook, GtkWidget *page, guint page_num, gpointer user_data) {
     (void)page_num;
     AppState *app = (AppState *)user_data;
-    if (!page || !app) return;
+    if (!page || !app || app->is_closing) return;
+    if (app->window && gtk_widget_in_destruction(GTK_WIDGET(app->window))) return;
 
     if (g_object_get_data(G_OBJECT(page), "zephys-dummy-page")) {
         int real_count = zephys_notebook_get_tab_count(notebook);
@@ -65,6 +67,7 @@ static void on_page_switched(GtkNotebook *notebook, GtkWidget *page, guint page_
 static void on_new_tab_button_clicked(GtkButton *btn, gpointer user_data) {
     (void)btn;
     AppState *app = (AppState *)user_data;
+    if (!app || app->is_closing || !app->notebook) return;
     int current_page = gtk_notebook_get_current_page(app->notebook);
     char *cwd = NULL;
     if (current_page >= 0) {
@@ -94,7 +97,7 @@ static void on_page_reordered(GtkNotebook *notebook, GtkWidget *child, guint pag
     (void)child;
     (void)page_num;
     AppState *app = (AppState *)user_data;
-    if (!app || !app->dummy_page) return;
+    if (!app || app->is_closing || !app->dummy_page) return;
 
     int dummy_idx = gtk_notebook_page_num(notebook, app->dummy_page);
     int total = gtk_notebook_get_n_pages(notebook);
@@ -112,12 +115,14 @@ typedef struct {
 
 static gboolean idle_activate_added_page(gpointer user_data) {
     PageAddedData *data = (PageAddedData *)user_data;
-    if (GTK_IS_NOTEBOOK(data->notebook) && GTK_IS_WIDGET(data->child)) {
+    if (GTK_IS_NOTEBOOK(data->notebook) && !gtk_widget_in_destruction(data->notebook) &&
+        GTK_IS_WIDGET(data->child) && !gtk_widget_in_destruction(data->child)) {
         int idx = gtk_notebook_page_num(GTK_NOTEBOOK(data->notebook), data->child);
         if (idx >= 0) {
             gtk_notebook_set_current_page(GTK_NOTEBOOK(data->notebook), idx);
             ZephysTab *tab = (ZephysTab *)g_object_get_data(G_OBJECT(data->child), "zephys-tab");
-            if (tab && tab->terminal) {
+            if (tab && !tab->is_closing && tab->terminal && GTK_IS_WIDGET(tab->terminal) &&
+                !gtk_widget_in_destruction(tab->terminal)) {
                 gtk_widget_grab_focus(tab->terminal);
             }
         }
@@ -131,7 +136,8 @@ static gboolean idle_activate_added_page(gpointer user_data) {
 static void on_page_added(GtkNotebook *notebook, GtkWidget *child, guint page_num, gpointer user_data) {
     (void)page_num;
     AppState *app = (AppState *)user_data;
-    if (!app) return;
+    if (!app || app->is_closing) return;
+    if (app->window && (gtk_widget_in_destruction(GTK_WIDGET(app->window)) || !GTK_IS_WINDOW(app->window))) return;
 
     if (g_object_get_data(G_OBJECT(child), "zephys-dummy-page")) {
         return;
@@ -177,7 +183,8 @@ static gboolean idle_handle_page_removed(gpointer user_data) {
 
     if (GTK_IS_WINDOW(window) && !gtk_widget_in_destruction(window)) {
         AppState *app = (AppState *)g_object_get_data(G_OBJECT(window), "zephys-app");
-        if (app && app->notebook) {
+        if (app && !app->is_closing && app->notebook && GTK_IS_NOTEBOOK(app->notebook) &&
+            !gtk_widget_in_destruction(GTK_WIDGET(app->notebook))) {
             int real_count = zephys_notebook_get_tab_count(app->notebook);
             if (real_count == 0) {
                 gtk_window_close(GTK_WINDOW(window));
@@ -197,9 +204,10 @@ static gboolean idle_handle_page_removed(gpointer user_data) {
                     cur_page = gtk_notebook_get_nth_page(app->notebook, target_idx);
                 }
 
-                if (cur_page) {
+                if (cur_page && !g_object_get_data(G_OBJECT(cur_page), "zephys-dummy-page")) {
                     ZephysTab *active_tab = (ZephysTab *)g_object_get_data(G_OBJECT(cur_page), "zephys-tab");
-                    if (active_tab && active_tab->terminal) {
+                    if (active_tab && !active_tab->is_closing && active_tab->terminal &&
+                        GTK_IS_WIDGET(active_tab->terminal) && !gtk_widget_in_destruction(active_tab->terminal)) {
                         gtk_widget_grab_focus(active_tab->terminal);
                     }
                     update_window_title_for_page(app, cur_page);
@@ -217,7 +225,8 @@ static void on_page_removed(GtkNotebook *notebook, GtkWidget *child, guint page_
     (void)notebook;
     (void)child;
     AppState *app = (AppState *)user_data;
-    if (!app || !app->window) return;
+    if (!app || app->is_closing || !app->window) return;
+    if (gtk_widget_in_destruction(GTK_WIDGET(app->window))) return;
 
     PageRemovedData *data = g_new0(PageRemovedData, 1);
     data->window = GTK_WIDGET(app->window);
@@ -230,7 +239,7 @@ static GtkNotebook *on_create_window(GtkNotebook *source_notebook, GtkWidget *pa
     (void)source_notebook;
     (void)page;
     AppState *source_app = (AppState *)user_data;
-    if (!source_app || !global_app) return NULL;
+    if (!source_app || source_app->is_closing || !global_app) return NULL;
 
     GtkWidget *new_window = zephys_window_create(global_app, source_app->config, NULL, FALSE);
     if (!new_window) return NULL;
@@ -247,9 +256,25 @@ static GtkNotebook *on_create_window(GtkNotebook *source_notebook, GtkWidget *pa
     return new_app->notebook;
 }
 
+static gboolean on_window_delete_event(GtkWidget *widget, GdkEvent *event, gpointer user_data) {
+    (void)widget;
+    (void)event;
+    AppState *app = (AppState *)user_data;
+    if (app) {
+        app->is_closing = TRUE;
+    }
+    return FALSE;
+}
+
 static void on_window_destroy(GtkWidget *widget, gpointer user_data) {
-    (void)user_data;
-    g_object_set_data(G_OBJECT(widget), "zephys-app", NULL);
+    (void)widget;
+    AppState *app = (AppState *)user_data;
+    if (app) {
+        app->is_closing = TRUE;
+        if (app->notebook && GTK_IS_NOTEBOOK(app->notebook)) {
+            g_signal_handlers_disconnect_by_data(app->notebook, app);
+        }
+    }
 }
 
 static gboolean on_window_draw(GtkWidget *widget, cairo_t *cr, gpointer user_data) {
@@ -372,7 +397,8 @@ GtkWidget *zephys_window_create(GtkApplication *app, ZephysConfig *config, const
         zephys_tab_new(GTK_NOTEBOOK(notebook), GTK_WINDOW(window), config, initial_cwd);
     }
 
-    g_signal_connect(window, "destroy", G_CALLBACK(on_window_destroy), NULL);
+    g_signal_connect(window, "delete-event", G_CALLBACK(on_window_delete_event), app_state);
+    g_signal_connect(window, "destroy", G_CALLBACK(on_window_destroy), app_state);
 
     return window;
 }
