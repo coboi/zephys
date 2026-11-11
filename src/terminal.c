@@ -255,6 +255,24 @@ static void on_tab_destroy(GtkWidget *widget, gpointer user_data) {
     g_free(tab);
 }
 
+static gboolean on_tab_box_draw(GtkWidget *widget, cairo_t *cr, gpointer user_data) {
+    (void)widget;
+    ZephysTab *tab = (ZephysTab *)user_data;
+    if (!tab || !tab->config) return FALSE;
+
+    GdkRGBA fg, bg, cursor, palette[16];
+    zephys_get_theme_palette(tab->config->theme_name, &fg, &bg, &cursor, palette);
+
+    double alpha = tab->config->opacity;
+    if (alpha < 0.1) alpha = 0.1;
+    if (alpha > 1.0) alpha = 1.0;
+
+    cairo_set_source_rgba(cr, bg.red, bg.green, bg.blue, alpha);
+    cairo_paint(cr);
+
+    return FALSE;
+}
+
 void zephys_tab_apply_config(ZephysTab *tab, ZephysConfig *config) {
     if (!tab || !tab->terminal || !config) return;
 
@@ -299,9 +317,17 @@ void zephys_tab_apply_config(ZephysTab *tab, ZephysConfig *config) {
     vte_terminal_set_scrollback_lines(VTE_TERMINAL(tab->terminal), config->scrollback_lines);
     vte_terminal_set_audible_bell(VTE_TERMINAL(tab->terminal), config->audible_bell);
 
-    /* Padding */
+    /* Padding (applied as inner margins on the terminal widget) */
+    if (tab->terminal) {
+        int pad = (config->padding >= 0 && config->padding <= 64) ? config->padding : 0;
+        gtk_widget_set_margin_start(tab->terminal, pad);
+        gtk_widget_set_margin_end(tab->terminal, pad);
+        gtk_widget_set_margin_top(tab->terminal, pad);
+        gtk_widget_set_margin_bottom(tab->terminal, pad);
+    }
     if (tab->box) {
-        gtk_container_set_border_width(GTK_CONTAINER(tab->box), config->padding);
+        gtk_container_set_border_width(GTK_CONTAINER(tab->box), 0);
+        gtk_widget_queue_draw(tab->box);
     }
 
     /* Match tab label font to terminal */
@@ -316,8 +342,14 @@ ZephysTab *zephys_tab_new(GtkNotebook *notebook, GtkWindow *window, ZephysConfig
     tab->font_scale = 1.0;
     tab->cwd = initial_cwd ? g_strdup(initial_cwd) : NULL;
 
+    /* Container */
+    tab->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
+    g_object_set_data(G_OBJECT(tab->box), "zephys-tab", tab);
+    g_signal_connect(tab->box, "draw", G_CALLBACK(on_tab_box_draw), tab);
+
     /* Terminal widget */
     tab->terminal = vte_terminal_new();
+    gtk_box_pack_start(GTK_BOX(tab->box), tab->terminal, TRUE, TRUE, 0);
 
     /* Apply configuration */
     zephys_tab_apply_config(tab, config);
@@ -335,12 +367,6 @@ ZephysTab *zephys_tab_new(GtkNotebook *notebook, GtkWindow *window, ZephysConfig
     } else if (regex_err) {
         g_error_free(regex_err);
     }
-
-    /* Container */
-    tab->box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 0);
-    gtk_container_set_border_width(GTK_CONTAINER(tab->box), 0);
-    g_object_set_data(G_OBJECT(tab->box), "zephys-tab", tab);
-    gtk_box_pack_start(GTK_BOX(tab->box), tab->terminal, TRUE, TRUE, 0);
 
     /* Tab header (label and close button) */
     tab->tab_label_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
