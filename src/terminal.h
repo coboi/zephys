@@ -8,6 +8,7 @@
 typedef struct {
     GtkWidget *box;
     GtkWidget *terminal;
+    GtkWidget *tab_label_event_box;
     GtkWidget *tab_label_box;
     GtkWidget *title_label;
     GtkWidget *close_button;
@@ -20,6 +21,7 @@ typedef struct {
     guint title_timer_id;
 } ZephysTab;
 
+int zephys_notebook_get_tab_count(GtkNotebook *notebook);
 ZephysTab *zephys_tab_new(GtkNotebook *notebook, GtkWindow *window, ZephysConfig *config, const char *initial_cwd);
 void zephys_tab_close(ZephysTab *tab);
 void zephys_tab_apply_config(ZephysTab *tab, ZephysConfig *config);

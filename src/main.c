@@ -9,12 +9,19 @@ typedef struct {
     GtkNotebook *notebook;
     GtkWindow *window;
     ZephysConfig *config;
+    GtkWidget *dummy_page;
 } AppState;
+
+static void on_new_tab_button_clicked(GtkButton *btn, gpointer user_data);
 
 static void on_page_switched(GtkNotebook *notebook, GtkWidget *page, guint page_num, gpointer user_data) {
     (void)page_num;
     AppState *app = (AppState *)user_data;
     if (!page) return;
+
+    if (g_object_get_data(G_OBJECT(page), "zephys-dummy-page")) {
+        return;
+    }
 
     ZephysTab *tab = (ZephysTab *)g_object_get_data(G_OBJECT(page), "zephys-tab");
     const char *title = NULL;
@@ -22,6 +29,9 @@ static void on_page_switched(GtkNotebook *notebook, GtkWidget *page, guint page_
         title = gtk_label_get_text(GTK_LABEL(tab->title_label));
     } else {
         GtkWidget *tab_label = gtk_notebook_get_tab_label(notebook, page);
+        if (GTK_IS_BIN(tab_label)) {
+            tab_label = gtk_bin_get_child(GTK_BIN(tab_label));
+        }
         if (GTK_IS_BOX(tab_label)) {
             GList *children = gtk_container_get_children(GTK_CONTAINER(tab_label));
             if (children && GTK_IS_LABEL(children->data)) {
@@ -56,6 +66,31 @@ static void on_new_tab_button_clicked(GtkButton *btn, gpointer user_data) {
     }
     zephys_tab_new(app->notebook, app->window, app->config, cwd);
     g_free(cwd);
+}
+
+static gboolean on_btn_add_tab_button_press(GtkWidget *widget, GdkEventButton *event, gpointer user_data) {
+    (void)widget;
+    AppState *app = (AppState *)user_data;
+    if (event->type == GDK_BUTTON_PRESS && event->button == GDK_BUTTON_MIDDLE) {
+        on_new_tab_button_clicked(NULL, app);
+        return GDK_EVENT_STOP;
+    }
+    return GDK_EVENT_PROPAGATE;
+}
+
+static void on_page_reordered(GtkNotebook *notebook, GtkWidget *child, guint page_num, gpointer user_data) {
+    (void)child;
+    (void)page_num;
+    AppState *app = (AppState *)user_data;
+    if (!app || !app->dummy_page) return;
+
+    int dummy_idx = gtk_notebook_page_num(notebook, app->dummy_page);
+    int total = gtk_notebook_get_n_pages(notebook);
+    if (dummy_idx >= 0 && dummy_idx != total - 1) {
+        g_signal_handlers_block_by_func(notebook, on_page_reordered, app);
+        gtk_notebook_reorder_child(notebook, app->dummy_page, -1);
+        g_signal_handlers_unblock_by_func(notebook, on_page_reordered, app);
+    }
 }
 
 static gboolean on_window_draw(GtkWidget *widget, cairo_t *cr, gpointer user_data) {
@@ -181,14 +216,27 @@ int main(int argc, char *argv[]) {
     app->window = GTK_WINDOW(window);
     app->config = config;
 
-    /* New tab button on tab bar */
+    g_signal_connect(notebook, "page-reordered", G_CALLBACK(on_page_reordered), app);
+
+    /* Dummy '+' tab placed at the end */
+    GtkWidget *dummy_page = gtk_box_new(GTK_ORIENTATION_VERTICAL, 0);
+    gtk_widget_show(dummy_page);
+    g_object_set_data(G_OBJECT(dummy_page), "zephys-dummy-page", GINT_TO_POINTER(1));
+    app->dummy_page = dummy_page;
+
     GtkWidget *btn_add_tab = gtk_button_new_from_icon_name("list-add-symbolic", GTK_ICON_SIZE_MENU);
     gtk_button_set_relief(GTK_BUTTON(btn_add_tab), GTK_RELIEF_NONE);
     gtk_widget_set_tooltip_text(btn_add_tab, "New Tab (Ctrl+Shift+T)");
     gtk_widget_set_focus_on_click(btn_add_tab, FALSE);
+    gtk_widget_set_name(btn_add_tab, "zephys-btn-new-tab");
+    gtk_widget_set_valign(btn_add_tab, GTK_ALIGN_CENTER);
+    gtk_widget_set_halign(btn_add_tab, GTK_ALIGN_CENTER);
     g_signal_connect(btn_add_tab, "clicked", G_CALLBACK(on_new_tab_button_clicked), app);
+    g_signal_connect(btn_add_tab, "button-press-event", G_CALLBACK(on_btn_add_tab_button_press), app);
     gtk_widget_show(btn_add_tab);
-    gtk_notebook_set_action_widget(GTK_NOTEBOOK(notebook), btn_add_tab, GTK_PACK_END);
+
+    gtk_notebook_append_page(GTK_NOTEBOOK(notebook), dummy_page, btn_add_tab);
+    gtk_notebook_set_tab_reorderable(GTK_NOTEBOOK(notebook), dummy_page, FALSE);
 
     gtk_container_add(GTK_CONTAINER(window), notebook);
 

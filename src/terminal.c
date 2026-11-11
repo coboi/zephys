@@ -220,6 +220,29 @@ void zephys_tab_zoom_reset(ZephysTab *tab) {
     update_tab_label_font(tab);
 }
 
+int zephys_notebook_get_tab_count(GtkNotebook *notebook) {
+    if (!notebook) return 0;
+    int total = gtk_notebook_get_n_pages(notebook);
+    int count = 0;
+    for (int i = 0; i < total; i++) {
+        GtkWidget *p = gtk_notebook_get_nth_page(notebook, i);
+        if (p && g_object_get_data(G_OBJECT(p), "zephys-tab")) {
+            count++;
+        }
+    }
+    return count;
+}
+
+static gboolean on_tab_label_button_press(GtkWidget *widget, GdkEventButton *event, gpointer user_data) {
+    (void)widget;
+    ZephysTab *tab = (ZephysTab *)user_data;
+    if (event->type == GDK_BUTTON_PRESS && event->button == GDK_BUTTON_MIDDLE) {
+        zephys_tab_close(tab);
+        return GDK_EVENT_STOP;
+    }
+    return GDK_EVENT_PROPAGATE;
+}
+
 void zephys_tab_close(ZephysTab *tab) {
     if (!tab) return;
 
@@ -232,12 +255,23 @@ void zephys_tab_close(ZephysTab *tab) {
     GtkWindow *window = tab->window;
 
     int page_num = gtk_notebook_page_num(notebook, tab->box);
+    int real_count = zephys_notebook_get_tab_count(notebook);
+    int cur = gtk_notebook_get_current_page(notebook);
+
     if (page_num >= 0) {
+        /* If closing the currently active tab, switch to adjacent real tab first */
+        if (real_count > 1 && cur == page_num) {
+            if (page_num == real_count - 1) {
+                gtk_notebook_set_current_page(notebook, page_num - 1);
+            } else {
+                gtk_notebook_set_current_page(notebook, page_num + 1);
+            }
+        }
         gtk_notebook_remove_page(notebook, page_num);
     }
 
     /* If no more tabs, close the window */
-    if (gtk_notebook_get_n_pages(notebook) == 0) {
+    if (zephys_notebook_get_tab_count(notebook) == 0) {
         if (window) {
             gtk_window_close(window);
         }
@@ -368,8 +402,13 @@ ZephysTab *zephys_tab_new(GtkNotebook *notebook, GtkWindow *window, ZephysConfig
         g_error_free(regex_err);
     }
 
-    /* Tab header (label and close button) */
+    /* Tab header (label and close button, with middle-click support) */
+    tab->tab_label_event_box = gtk_event_box_new();
+    gtk_event_box_set_visible_window(GTK_EVENT_BOX(tab->tab_label_event_box), FALSE);
+    gtk_widget_add_events(tab->tab_label_event_box, GDK_BUTTON_PRESS_MASK);
+
     tab->tab_label_box = gtk_box_new(GTK_ORIENTATION_HORIZONTAL, 6);
+    gtk_style_context_add_class(gtk_widget_get_style_context(tab->tab_label_box), "zephys-tab-label-box");
     tab->title_label = gtk_label_new("~");
     gtk_label_set_ellipsize(GTK_LABEL(tab->title_label), PANGO_ELLIPSIZE_END);
     gtk_label_set_width_chars(GTK_LABEL(tab->title_label), 8);
@@ -379,10 +418,14 @@ ZephysTab *zephys_tab_new(GtkNotebook *notebook, GtkWindow *window, ZephysConfig
     gtk_button_set_relief(GTK_BUTTON(tab->close_button), GTK_RELIEF_NONE);
     gtk_widget_set_focus_on_click(tab->close_button, FALSE);
     g_signal_connect(tab->close_button, "clicked", G_CALLBACK(on_close_button_clicked), tab);
+    g_signal_connect(tab->close_button, "button-press-event", G_CALLBACK(on_tab_label_button_press), tab);
 
     gtk_box_pack_start(GTK_BOX(tab->tab_label_box), tab->title_label, TRUE, TRUE, 0);
     gtk_box_pack_start(GTK_BOX(tab->tab_label_box), tab->close_button, FALSE, FALSE, 0);
-    gtk_widget_show_all(tab->tab_label_box);
+
+    gtk_container_add(GTK_CONTAINER(tab->tab_label_event_box), tab->tab_label_box);
+    g_signal_connect(tab->tab_label_event_box, "button-press-event", G_CALLBACK(on_tab_label_button_press), tab);
+    gtk_widget_show_all(tab->tab_label_event_box);
     update_tab_label_font(tab);
     zephys_tab_update_title(tab);
 
@@ -417,8 +460,23 @@ ZephysTab *zephys_tab_new(GtkNotebook *notebook, GtkWindow *window, ZephysConfig
     g_signal_connect(tab->terminal, "button-press-event", G_CALLBACK(zephys_on_button_press), tab);
     g_signal_connect(tab->box, "destroy", G_CALLBACK(on_tab_destroy), tab);
 
-    /* Add to notebook */
-    int index = gtk_notebook_append_page(notebook, tab->box, tab->tab_label_box);
+    /* Add to notebook (insert before dummy '+' tab if present) */
+    int dummy_index = -1;
+    int n_pages = gtk_notebook_get_n_pages(notebook);
+    for (int i = 0; i < n_pages; i++) {
+        GtkWidget *p = gtk_notebook_get_nth_page(notebook, i);
+        if (p && g_object_get_data(G_OBJECT(p), "zephys-dummy-page")) {
+            dummy_index = i;
+            break;
+        }
+    }
+
+    int index;
+    if (dummy_index >= 0) {
+        index = gtk_notebook_insert_page(notebook, tab->box, tab->tab_label_event_box, dummy_index);
+    } else {
+        index = gtk_notebook_append_page(notebook, tab->box, tab->tab_label_event_box);
+    }
     gtk_notebook_set_tab_reorderable(notebook, tab->box, TRUE);
     gtk_widget_show_all(tab->box);
     gtk_notebook_set_current_page(notebook, index);

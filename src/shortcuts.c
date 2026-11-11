@@ -189,7 +189,7 @@ gboolean zephys_on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
         switch (keyval) {
             case GDK_KEY_Page_Up: {
                 int cur = gtk_notebook_get_current_page(tab->notebook);
-                int total = gtk_notebook_get_n_pages(tab->notebook);
+                int total = zephys_notebook_get_tab_count(tab->notebook);
                 if (total > 1) {
                     gtk_notebook_set_current_page(tab->notebook, (cur - 1 + total) % total);
                 }
@@ -198,7 +198,7 @@ gboolean zephys_on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
 
             case GDK_KEY_Page_Down: {
                 int cur = gtk_notebook_get_current_page(tab->notebook);
-                int total = gtk_notebook_get_n_pages(tab->notebook);
+                int total = zephys_notebook_get_tab_count(tab->notebook);
                 if (total > 1) {
                     gtk_notebook_set_current_page(tab->notebook, (cur + 1) % total);
                 }
@@ -246,7 +246,7 @@ gboolean zephys_on_key_press(GtkWidget *widget, GdkEventKey *event, gpointer use
     if (state == GDK_MOD1_MASK) {
         if (keyval >= GDK_KEY_1 && keyval <= GDK_KEY_9) {
             int target_idx = keyval - GDK_KEY_1;
-            if (target_idx < gtk_notebook_get_n_pages(tab->notebook)) {
+            if (target_idx < zephys_notebook_get_tab_count(tab->notebook)) {
                 gtk_notebook_set_current_page(tab->notebook, target_idx);
                 return TRUE;
             }
