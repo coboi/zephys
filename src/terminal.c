@@ -10,6 +10,18 @@
 #define PCRE2_MULTILINE 0x00000400u
 #endif
 
+static ZephysTab *zephys_tab_ref(ZephysTab *tab) {
+    tab->ref_count++;
+    return tab;
+}
+
+static void zephys_tab_unref(ZephysTab *tab) {
+    if (--tab->ref_count == 0) {
+        g_free(tab->cwd);
+        g_free(tab);
+    }
+}
+
 static char *get_foreground_process_name(ZephysTab *tab) {
     if (!tab || !tab->terminal || tab->child_pid <= 0) return NULL;
 
@@ -117,10 +129,11 @@ static void on_spawn_completed(VteTerminal *terminal, GPid pid, GError *error, g
     if (error) {
         g_printerr("Failed to spawn shell: %s\n", error->message);
         g_error_free(error);
-        return;
+    } else if (!tab->is_closing) {
+        tab->child_pid = pid;
+        zephys_tab_update_title(tab);
     }
-    tab->child_pid = pid;
-    zephys_tab_update_title(tab);
+    zephys_tab_unref(tab);
 }
 
 static void on_close_button_clicked(GtkButton *button, gpointer user_data) {
@@ -297,9 +310,7 @@ static void on_tab_destroy(GtkWidget *widget, gpointer user_data) {
     if (tab->terminal) {
         g_signal_handlers_disconnect_by_data(tab->terminal, tab);
     }
-    g_free(tab->cwd);
-    tab->cwd = NULL;
-    g_free(tab);
+    zephys_tab_unref(tab);
 }
 
 static gboolean on_tab_box_draw(GtkWidget *widget, cairo_t *cr, gpointer user_data) {
@@ -383,6 +394,7 @@ void zephys_tab_apply_config(ZephysTab *tab, ZephysConfig *config) {
 
 ZephysTab *zephys_tab_new(GtkNotebook *notebook, GtkWindow *window, ZephysConfig *config, const char *initial_cwd) {
     ZephysTab *tab = g_new0(ZephysTab, 1);
+    tab->ref_count = 1;
     tab->notebook = notebook;
     tab->window = window;
     tab->config = config;
@@ -462,7 +474,7 @@ ZephysTab *zephys_tab_new(GtkNotebook *notebook, GtkWindow *window, ZephysConfig
         -1,
         NULL,
         on_spawn_completed,
-        tab
+        zephys_tab_ref(tab)
     );
 
     /* Signals */

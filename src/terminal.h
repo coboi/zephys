@@ -19,6 +19,7 @@ typedef struct {
     ZephysConfig *config;
     double font_scale;
     guint title_timer_id;
+    guint ref_count;
     gboolean is_closing;
 } ZephysTab;
 
